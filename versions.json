@@ -3,8 +3,8 @@
     "version": "v1.0-pre",
     "title": "User Guide",
     "aliases": [
-      "v1-pre",
-      "latest-pre"
+      "latest-pre",
+      "v1-pre"
     ]
   },
   {
@@ -19,8 +19,8 @@
     "version": "v0.16",
     "title": "v0.16.0",
     "aliases": [
-      "latest",
-      "v0"
+      "v0",
+      "latest"
     ]
   },
   {
