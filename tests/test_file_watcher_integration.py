@@ -26,7 +26,9 @@ async def test_file_watcher(tmp_path: pathlib.Path) -> None:
     number_of_writes = 0
     expected_number_of_writes = 3
 
-    file_watcher = FileWatcher(paths=[str(tmp_path)])
+    file_watcher = FileWatcher(
+        paths=[str(tmp_path)], polling_interval=timedelta(seconds=0.05)
+    )
     timer = Timer(timedelta(seconds=0.1), SkipMissedAndDrift())
 
     async for selected in select(file_watcher, timer):
@@ -65,6 +67,7 @@ async def test_file_watcher_deletes(tmp_path: pathlib.Path) -> None:
         paths=[str(tmp_path)],
         event_types={EventType.DELETE},
         force_polling=False,
+        polling_interval=timedelta(seconds=0.05),
     )
     write_timer = Timer(timedelta(seconds=0.1), SkipMissedAndDrift())
     deletion_timer = Timer(timedelta(seconds=0.25), SkipMissedAndDrift())
