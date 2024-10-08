@@ -10,7 +10,15 @@
 
 ## New Features
 
-<!-- Here goes the main new features and examples or instructions on how to use them -->
+- There is a new `Receiver.triggered` method that can be used instead of `selected_from`:
+
+  ```python
+  async for selected in select(recv1, recv2):
+      if recv1.triggered(selected):
+          print('Received from recv1:', selected.message)
+      if recv2.triggered(selected):
+          print('Received from recv2:', selected.message)
+  ```
 
 ## Bug Fixes
 
