@@ -155,10 +155,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Generic, Self
+from typing import TYPE_CHECKING, Any, Generic, Self, TypeGuard
 
 from ._exceptions import Error
 from ._generic import MappedMessageT_co, ReceiverMessageT_co
+
+if TYPE_CHECKING:
+    from ._select import Selected
 
 
 class Receiver(ABC, Generic[ReceiverMessageT_co]):
@@ -283,6 +286,30 @@ class Receiver(ABC, Generic[ReceiverMessageT_co]):
             A new receiver that only receives messages that pass the filter.
         """
         return _Filter(receiver=self, filter_function=filter_function)
+
+    def triggered(
+        self, selected: Selected[Any]
+    ) -> TypeGuard[Selected[ReceiverMessageT_co]]:
+        """Check whether this receiver was selected by [`select()`][frequenz.channels.select].
+
+        This method is used in conjunction with the
+        [`Selected`][frequenz.channels.Selected] class to determine which receiver was
+        selected in `select()` iteration.
+
+        It also works as a [type guard][typing.TypeGuard] to narrow the type of the
+        `Selected` instance to the type of the receiver.
+
+        Please see [`select()`][frequenz.channels.select] for an example.
+
+        Args:
+            selected: The result of a `select()` iteration.
+
+        Returns:
+            Whether this receiver was selected.
+        """
+        if handled := selected._recv is self:  # pylint: disable=protected-access
+            selected._handled = True  # pylint: disable=protected-access
+        return handled
 
 
 class ReceiverError(Error, Generic[ReceiverMessageT_co]):
