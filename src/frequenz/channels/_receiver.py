@@ -237,10 +237,7 @@ class Receiver(ABC, Generic[ReceiverMessageT_co]):
             # introduced by __anext__.
             if (
                 isinstance(exc.__cause__, ReceiverStoppedError)
-                # pylint is not smart enough to figure out we checked above
-                # this is a ReceiverStoppedError and thus it does have
-                # a receiver member
-                and exc.__cause__.receiver is self  # pylint: disable=no-member
+                and exc.__cause__.receiver is self
             ):
                 raise exc.__cause__
             raise ReceiverStoppedError(self) from exc
