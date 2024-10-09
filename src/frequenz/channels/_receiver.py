@@ -450,7 +450,6 @@ class _Filter(Receiver[ReceiverMessageT_co], Generic[ReceiverMessageT_co]):
 
         Raises:
             ReceiverStoppedError: If the receiver stopped producing messages.
-            ReceiverError: If there is a problem with the receiver.
         """
         if self._recv_closed:
             raise ReceiverStoppedError(self)
