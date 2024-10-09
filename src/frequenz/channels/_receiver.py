@@ -230,7 +230,7 @@ class Receiver(ABC, Generic[ReceiverMessageT_co]):
             ReceiverError: If there is some problem with the receiver.
         """
         try:
-            received = await self.__anext__()  # pylint: disable=unnecessary-dunder-call
+            received = await anext(self)
         except StopAsyncIteration as exc:
             # If we already had a cause and it was the receiver was stopped,
             # then reuse that error, as StopAsyncIteration is just an artifact
