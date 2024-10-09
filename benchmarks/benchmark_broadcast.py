@@ -141,7 +141,7 @@ def time_async_task(task: Coroutine[Any, Any, int]) -> tuple[float, Any]:
     return timeit.default_timer() - start, ret
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 def run_one(
     benchmark_method: Callable[[int, int, int], Coroutine[Any, Any, int]],
     num_channels: int,

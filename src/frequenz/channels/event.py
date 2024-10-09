@@ -16,10 +16,10 @@ This module contains the following:
 
 import asyncio as _asyncio
 
-from frequenz.channels import _receiver
+from frequenz.channels._receiver import Receiver, ReceiverStoppedError
 
 
-class Event(_receiver.Receiver[None]):
+class Event(Receiver[None]):
     """A receiver that can be made ready directly.
 
     # Usage
@@ -161,7 +161,7 @@ class Event(_receiver.Receiver[None]):
             ReceiverStoppedError: If this receiver is stopped.
         """
         if not self._is_set and self._is_stopped:
-            raise _receiver.ReceiverStoppedError(self)
+            raise ReceiverStoppedError(self)
 
         assert self._is_set, "calls to `consume()` must be follow a call to `ready()`"
 

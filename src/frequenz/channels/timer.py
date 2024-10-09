@@ -466,7 +466,8 @@ class Timer(Receiver[timedelta]):
     depending on the chosen policy.
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    # We need the noqa here because RuntimeError is raised indirectly.
+    def __init__(  # noqa: DOC503 pylint: disable=too-many-arguments
         self,
         interval: timedelta,
         missed_tick_policy: MissedTickPolicy,
@@ -586,7 +587,8 @@ class Timer(Receiver[timedelta]):
         """Whether the timer is running."""
         return not self._stopped
 
-    def reset(
+    # We need the noqa here because RuntimeError is raised indirectly.
+    def reset(  # noqa: DOC503
         self,
         *,
         interval: timedelta | None = None,

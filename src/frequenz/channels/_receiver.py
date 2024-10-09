@@ -164,7 +164,9 @@ from ._generic import MappedMessageT_co, ReceiverMessageT_co
 class Receiver(ABC, Generic[ReceiverMessageT_co]):
     """An endpoint to receive messages."""
 
-    async def __anext__(self) -> ReceiverMessageT_co:
+    # We need the noqa here because ReceiverError can be raised by ready() and consume()
+    # implementations.
+    async def __anext__(self) -> ReceiverMessageT_co:  # noqa: DOC503
         """Await the next message in the async iteration over received messages.
 
         Returns:
@@ -215,7 +217,9 @@ class Receiver(ABC, Generic[ReceiverMessageT_co]):
         """
         return self
 
-    async def receive(self) -> ReceiverMessageT_co:
+    # We need the noqa here because ReceiverError can be raised by consume()
+    # implementations.
+    async def receive(self) -> ReceiverMessageT_co:  # noqa: DOC503
         """Receive a message.
 
         Returns:
@@ -226,19 +230,18 @@ class Receiver(ABC, Generic[ReceiverMessageT_co]):
             ReceiverError: If there is some problem with the receiver.
         """
         try:
-            received = await self.__anext__()  # pylint: disable=unnecessary-dunder-call
+            received = await anext(self)
         except StopAsyncIteration as exc:
             # If we already had a cause and it was the receiver was stopped,
             # then reuse that error, as StopAsyncIteration is just an artifact
             # introduced by __anext__.
             if (
                 isinstance(exc.__cause__, ReceiverStoppedError)
-                # pylint is not smart enough to figure out we checked above
-                # this is a ReceiverStoppedError and thus it does have
-                # a receiver member
-                and exc.__cause__.receiver is self  # pylint: disable=no-member
+                and exc.__cause__.receiver is self
             ):
-                raise exc.__cause__
+                # This is a false positive, we are actually checking __cause__ is a
+                # ReceiverStoppedError which is an exception.
+                raise exc.__cause__  # pylint: disable=raising-non-exception
             raise ReceiverStoppedError(self) from exc
         return received
 
@@ -450,7 +453,6 @@ class _Filter(Receiver[ReceiverMessageT_co], Generic[ReceiverMessageT_co]):
 
         Raises:
             ReceiverStoppedError: If the receiver stopped producing messages.
-            ReceiverError: If there is a problem with the receiver.
         """
         if self._recv_closed:
             raise ReceiverStoppedError(self)
