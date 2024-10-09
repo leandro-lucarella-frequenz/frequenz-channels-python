@@ -164,7 +164,9 @@ from ._generic import MappedMessageT_co, ReceiverMessageT_co
 class Receiver(ABC, Generic[ReceiverMessageT_co]):
     """An endpoint to receive messages."""
 
-    async def __anext__(self) -> ReceiverMessageT_co:
+    # We need the noqa here because ReceiverError can be raised by ready() and consume()
+    # implementations.
+    async def __anext__(self) -> ReceiverMessageT_co:  # noqa: DOC503
         """Await the next message in the async iteration over received messages.
 
         Returns:
@@ -215,7 +217,9 @@ class Receiver(ABC, Generic[ReceiverMessageT_co]):
         """
         return self
 
-    async def receive(self) -> ReceiverMessageT_co:
+    # We need the noqa here because ReceiverError can be raised by consume()
+    # implementations.
+    async def receive(self) -> ReceiverMessageT_co:  # noqa: DOC503
         """Receive a message.
 
         Returns:

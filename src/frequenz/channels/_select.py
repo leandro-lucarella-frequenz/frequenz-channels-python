@@ -196,8 +196,10 @@ class Selected(Generic[ReceiverMessageT_co]):
         self._handled: bool = False
         """Flag to indicate if this selected has been handled in the if-chain."""
 
+    # We need the noqa here because pydoclint can't figure out raise self._exception
+    # actually raise an Exception.
     @property
-    def message(self) -> ReceiverMessageT_co:
+    def message(self) -> ReceiverMessageT_co:  # noqa: DOC503
         """The message that was received, if any.
 
         Returns:
@@ -339,7 +341,11 @@ class UnhandledSelectedError(SelectError, Generic[ReceiverMessageT_co]):
 # https://github.com/python/mypy/issues/13597
 
 
-async def select(*receivers: Receiver[Any]) -> AsyncIterator[Selected[Any]]:
+# We need the noqa here because BaseExceptionGroup can be raised indirectly by
+# _stop_pending_tasks.
+async def select(  # noqa: DOC503
+    *receivers: Receiver[Any],
+) -> AsyncIterator[Selected[Any]]:
     """Iterate over the messages of all receivers as they receive new messages.
 
     This function is used to iterate over the messages of all receivers as they receive
