@@ -239,7 +239,9 @@ class Receiver(ABC, Generic[ReceiverMessageT_co]):
                 isinstance(exc.__cause__, ReceiverStoppedError)
                 and exc.__cause__.receiver is self
             ):
-                raise exc.__cause__
+                # This is a false positive, we are actually checking __cause__ is a
+                # ReceiverStoppedError which is an exception.
+                raise exc.__cause__  # pylint: disable=raising-non-exception
             raise ReceiverStoppedError(self) from exc
         return received
 
