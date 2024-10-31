@@ -269,9 +269,7 @@ def selected_from(
     Returns:
         Whether the given receiver was selected.
     """
-    if handled := selected._recv is receiver:  # pylint: disable=protected-access
-        selected._handled = True  # pylint: disable=protected-access
-    return handled
+    return receiver.triggered(selected)
 
 
 class SelectError(Error):
