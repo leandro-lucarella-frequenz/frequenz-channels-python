@@ -373,9 +373,7 @@ class _Mapper(
             ReceiverStoppedError: If the receiver stopped producing messages.
             ReceiverError: If there is a problem with the receiver.
         """
-        return self._mapping_function(
-            self._receiver.consume()
-        )  # pylint: disable=protected-access
+        return self._mapping_function(self._receiver.consume())
 
     def __str__(self) -> str:
         """Return a string representation of the mapper."""
