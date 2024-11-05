@@ -269,9 +269,7 @@ def selected_from(
     Returns:
         Whether the given receiver was selected.
     """
-    if handled := selected._recv is receiver:  # pylint: disable=protected-access
-        selected._handled = True  # pylint: disable=protected-access
-    return handled
+    return receiver.triggered(selected)
 
 
 class SelectError(Error):
@@ -378,14 +376,14 @@ async def select(  # noqa: DOC503
         import datetime
         from typing import assert_never
 
-        from frequenz.channels import ReceiverStoppedError, select, selected_from
+        from frequenz.channels import ReceiverStoppedError, select
         from frequenz.channels.timer import SkipMissedAndDrift, Timer, TriggerAllMissed
 
         timer1 = Timer(datetime.timedelta(seconds=1), TriggerAllMissed())
         timer2 = Timer(datetime.timedelta(seconds=0.5), SkipMissedAndDrift())
 
         async for selected in select(timer1, timer2):
-            if selected_from(selected, timer1):
+            if timer1.triggered(selected):
                 # Beware: `selected.message` might raise an exception, you can always
                 # check for exceptions with `selected.exception` first or use
                 # a try-except block. You can also quickly check if the receiver was
@@ -395,7 +393,7 @@ async def select(  # noqa: DOC503
                     continue
                 print(f"timer1: now={datetime.datetime.now()} drift={selected.message}")
                 timer2.stop()
-            elif selected_from(selected, timer2):
+            elif timer2.triggered(selected):
                 # Explicitly handling of exceptions
                 match selected.exception:
                     case ReceiverStoppedError():
