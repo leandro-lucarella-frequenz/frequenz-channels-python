@@ -155,13 +155,16 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, Generic, Self, TypeGuard
+from typing import TYPE_CHECKING, Any, Generic, Self, TypeGuard, TypeVar, overload
 
 from ._exceptions import Error
 from ._generic import MappedMessageT_co, ReceiverMessageT_co
 
 if TYPE_CHECKING:
     from ._select import Selected
+
+FilteredMessageT_co = TypeVar("FilteredMessageT_co", covariant=True)
+"""Type variable for the filtered message type."""
 
 
 class Receiver(ABC, Generic[ReceiverMessageT_co]):
@@ -267,10 +270,65 @@ class Receiver(ABC, Generic[ReceiverMessageT_co]):
         """
         return _Mapper(receiver=self, mapping_function=mapping_function)
 
+    @overload
+    def filter(
+        self,
+        filter_function: Callable[
+            [ReceiverMessageT_co], TypeGuard[FilteredMessageT_co]
+        ],
+        /,
+    ) -> Receiver[FilteredMessageT_co]:
+        """Apply a type guard on the messages on a receiver.
+
+        Tip:
+            The returned receiver type won't have all the methods of the original
+            receiver. If you need to access methods of the original receiver that are
+            not part of the `Receiver` interface you should save a reference to the
+            original receiver and use that instead.
+
+        Args:
+            filter_function: The function to be applied on incoming messages to
+                determine if they should be received.
+
+        Returns:
+            A new receiver that only receives messages that pass the filter.
+        """
+        ...  # pylint: disable=unnecessary-ellipsis
+
+    @overload
     def filter(
         self, filter_function: Callable[[ReceiverMessageT_co], bool], /
     ) -> Receiver[ReceiverMessageT_co]:
         """Apply a filter function on the messages on a receiver.
+
+        Tip:
+            The returned receiver type won't have all the methods of the original
+            receiver. If you need to access methods of the original receiver that are
+            not part of the `Receiver` interface you should save a reference to the
+            original receiver and use that instead.
+
+        Args:
+            filter_function: The function to be applied on incoming messages to
+                determine if they should be received.
+
+        Returns:
+            A new receiver that only receives messages that pass the filter.
+        """
+        ...  # pylint: disable=unnecessary-ellipsis
+
+    def filter(
+        self,
+        filter_function: (
+            Callable[[ReceiverMessageT_co], bool]
+            | Callable[[ReceiverMessageT_co], TypeGuard[FilteredMessageT_co]]
+        ),
+        /,
+    ) -> Receiver[ReceiverMessageT_co] | Receiver[FilteredMessageT_co]:
+        """Apply a filter function on the messages on a receiver.
+
+        Note:
+            You can pass a [type guard][typing.TypeGuard] as the filter function to
+            narrow the type of the messages that pass the filter.
 
         Tip:
             The returned receiver type won't have all the methods of the original
