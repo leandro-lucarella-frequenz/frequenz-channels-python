@@ -6,6 +6,7 @@
 
 import asyncio
 from dataclasses import dataclass
+from typing import TypeGuard, assert_never
 
 import pytest
 
@@ -246,6 +247,31 @@ async def test_broadcast_filter() -> None:
 
     assert (await receiver.receive()) == 12
     assert (await receiver.receive()) == 15
+
+
+async def test_broadcast_filter_type_guard() -> None:
+    """Ensure filter type guard works."""
+    chan = Broadcast[int | str](name="input-chan")
+    sender = chan.new_sender()
+
+    def _is_int(num: int | str) -> TypeGuard[int]:
+        return isinstance(num, int)
+
+    # filter out objects that are not integers.
+    receiver = chan.new_receiver().filter(_is_int)
+
+    await sender.send("hello")
+    await sender.send(8)
+
+    message = await receiver.receive()
+    assert message == 8
+    is_int = False
+    match message:
+        case int():
+            is_int = True
+        case unexpected:
+            assert_never(unexpected)
+    assert is_int
 
 
 async def test_broadcast_receiver_drop() -> None:
