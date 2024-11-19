@@ -13,3 +13,7 @@
   ```
 
 * `Receiver.filter()` can now properly handle `TypeGuard`s. The resulting receiver will now have the narrowed type when a `TypeGuard` is used.
+
+## Bug Fixes
+
+- Fixed a memory leak in the timer.

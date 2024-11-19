@@ -684,14 +684,20 @@ class Timer(Receiver[timedelta]):
         # could be reset while we are sleeping, in which case we need to recalculate
         # the time to the next tick and try again.
         while time_to_next_tick > 0:
-            await next(
-                asyncio.as_completed(
-                    [
-                        asyncio.sleep(time_to_next_tick / 1_000_000),
-                        self._reset_event.wait(),
-                    ]
-                )
+            _, pending = await asyncio.wait(
+                [
+                    asyncio.create_task(asyncio.sleep(time_to_next_tick / 1_000_000)),
+                    asyncio.create_task(self._reset_event.wait()),
+                ],
+                return_when=asyncio.FIRST_COMPLETED,
             )
+            for task in pending:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+
             self._reset_event.clear()
             now = self._now()
             time_to_next_tick = self._next_tick_time - now
