@@ -52,6 +52,7 @@ body:
         - Build script, CI, dependencies, etc. (part:tooling)
         - Channels, `Broadcast`, `Anycast`, etc. (part:channels)
         - Core types (`Sender`, `Receiver`, exceptions, etc.) (part:core)
+        - Experimental features (the `experimental` package) (part:experimental)
         - Utilities (`Event`, `FileWatcher`, `Timer`, etc.) (part:utilities)
         - Synchronization of multiple sources (`select()`, `merge()`, etc.) (part:synchronization)
     validations:
