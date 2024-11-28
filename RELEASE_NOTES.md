@@ -10,7 +10,9 @@
 
 ## New Features
 
-<!-- Here goes the main new features and examples or instructions on how to use them -->
+### Experimental
+
+- A new predicate, `OnlyIfPrevious`, to `filter()` messages based on the previous message.
 
 ## Bug Fixes
 
