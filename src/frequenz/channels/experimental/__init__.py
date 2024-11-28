@@ -10,10 +10,11 @@ Warning:
 """
 
 from ._pipe import Pipe
-from ._predicates import OnlyIfPrevious
+from ._predicates import ChangedOnly, OnlyIfPrevious
 from ._relay_sender import RelaySender
 
 __all__ = [
+    "ChangedOnly",
     "OnlyIfPrevious",
     "Pipe",
     "RelaySender",
