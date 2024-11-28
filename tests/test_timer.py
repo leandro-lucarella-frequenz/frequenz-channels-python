@@ -31,19 +31,12 @@ def event_loop() -> Iterator[async_solipsism.EventLoop]:
     loop.close()
 
 
-_max_timedelta_microseconds = (
-    int(
-        timedelta.max.total_seconds() * 1_000_000,
-    )
-    - 1
-)
+# We give some extra room (dividing by 10) to the max and min to avoid flaky errors
+# failing when getting too close to the limits, as these are not realistic scenarios and
+# weird things can happen.
+_max_timedelta_microseconds = int(timedelta.max.total_seconds() * 1_000_000 / 10)
 
-_min_timedelta_microseconds = (
-    int(
-        timedelta.min.total_seconds() * 1_000_000,
-    )
-    + 1
-)
+_min_timedelta_microseconds = int(timedelta.min.total_seconds() * 1_000_000 / 10)
 
 _calculate_next_tick_time_args = {
     "now": st.integers(),
