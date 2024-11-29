@@ -132,20 +132,51 @@ def test_policy_skip_missed_and_resync_examples() -> None:
 
 
 @hypothesis.given(
-    tolerance=st.integers(min_value=_min_timedelta_microseconds, max_value=-1)
+    tolerance=st.floats(
+        min_value=timedelta.min.total_seconds(),
+        max_value=-1,
+        exclude_max=False,
+        allow_nan=False,
+        allow_infinity=False,
+    ),
 )
-def test_policy_skip_missed_and_drift_invalid_tolerance(tolerance: int) -> None:
+def test_policy_skip_missed_and_drift_invalid_tolerance(tolerance: float) -> None:
     """Test the SkipMissedAndDrift policy raises an error for invalid tolerances."""
     with pytest.raises(ValueError, match="delay_tolerance must be positive"):
         SkipMissedAndDrift(delay_tolerance=timedelta(microseconds=tolerance))
 
 
 @hypothesis.given(
-    tolerance=st.integers(min_value=0, max_value=_max_timedelta_microseconds),
+    tolerance=st.floats(
+        min_value=0,
+        max_value=timedelta.max.total_seconds(),
+        allow_nan=False,
+        allow_infinity=False,
+    ),
     **_calculate_next_tick_time_args,
 )
+# We add some particular tests cases that were problematic in the past. See:
+# https://github.com/frequenz-floss/frequenz-channels-python/pull/347
+@hypothesis.example(
+    tolerance=171726190479152832.0,
+    now=171_726_190_479_152_817,
+    scheduled_tick_time=-1,
+    interval=1,
+)
+@hypothesis.example(
+    tolerance=171726190479152830.0,
+    now=171_726_190_479_152_817,
+    scheduled_tick_time=-1,
+    interval=1,
+)
+@hypothesis.example(
+    tolerance=171726190479152831.0,
+    now=171_726_190_479_152_817,
+    scheduled_tick_time=-1,
+    interval=1,
+)
 def test_policy_skip_missed_and_drift(
-    tolerance: int, now: int, scheduled_tick_time: int, interval: int
+    tolerance: float, now: int, scheduled_tick_time: int, interval: int
 ) -> None:
     """Test the SkipMissedAndDrift policy."""
     hypothesis.assume(now >= scheduled_tick_time)
