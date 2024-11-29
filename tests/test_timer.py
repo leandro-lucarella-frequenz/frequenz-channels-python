@@ -6,7 +6,6 @@
 
 import asyncio
 import enum
-from collections.abc import Iterator
 from datetime import timedelta
 
 import async_solipsism
@@ -22,21 +21,25 @@ from frequenz.channels.timer import (
 )
 
 
-# Setting 'autouse' has no effect as this method replaces the event loop for all tests in the file.
-@pytest.fixture()
-def event_loop() -> Iterator[async_solipsism.EventLoop]:
-    """Replace the loop with one that doesn't interact with the outside world."""
-    loop = async_solipsism.EventLoop()
-    yield loop
-    loop.close()
+@pytest.fixture(autouse=True)
+def event_loop_policy() -> async_solipsism.EventLoopPolicy:
+    """Return an event loop policy that uses the async solipsism event loop."""
+    return async_solipsism.EventLoopPolicy()
 
 
-# We give some extra room (dividing by 10) to the max and min to avoid flaky errors
-# failing when getting too close to the limits, as these are not realistic scenarios and
-# weird things can happen.
-_max_timedelta_microseconds = int(timedelta.max.total_seconds() * 1_000_000 / 10)
+_max_timedelta_microseconds = (
+    int(
+        timedelta.max.total_seconds() * 1_000_000,
+    )
+    - 1
+)
 
-_min_timedelta_microseconds = int(timedelta.min.total_seconds() * 1_000_000 / 10)
+_min_timedelta_microseconds = (
+    int(
+        timedelta.min.total_seconds() * 1_000_000,
+    )
+    + 1
+)
 
 _calculate_next_tick_time_args = {
     "now": st.integers(),
@@ -136,20 +139,51 @@ def test_policy_skip_missed_and_resync_examples() -> None:
 
 
 @hypothesis.given(
-    tolerance=st.integers(min_value=_min_timedelta_microseconds, max_value=-1)
+    tolerance=st.floats(
+        min_value=timedelta.min.total_seconds(),
+        max_value=-1,
+        exclude_max=False,
+        allow_nan=False,
+        allow_infinity=False,
+    ),
 )
-def test_policy_skip_missed_and_drift_invalid_tolerance(tolerance: int) -> None:
+def test_policy_skip_missed_and_drift_invalid_tolerance(tolerance: float) -> None:
     """Test the SkipMissedAndDrift policy raises an error for invalid tolerances."""
     with pytest.raises(ValueError, match="delay_tolerance must be positive"):
         SkipMissedAndDrift(delay_tolerance=timedelta(microseconds=tolerance))
 
 
 @hypothesis.given(
-    tolerance=st.integers(min_value=0, max_value=_max_timedelta_microseconds),
+    tolerance=st.floats(
+        min_value=0,
+        max_value=timedelta.max.total_seconds(),
+        allow_nan=False,
+        allow_infinity=False,
+    ),
     **_calculate_next_tick_time_args,
 )
+# We add some particular tests cases that were problematic in the past. See:
+# https://github.com/frequenz-floss/frequenz-channels-python/pull/347
+@hypothesis.example(
+    tolerance=171726190479152832.0,
+    now=171_726_190_479_152_817,
+    scheduled_tick_time=-1,
+    interval=1,
+)
+@hypothesis.example(
+    tolerance=171726190479152830.0,
+    now=171_726_190_479_152_817,
+    scheduled_tick_time=-1,
+    interval=1,
+)
+@hypothesis.example(
+    tolerance=171726190479152831.0,
+    now=171_726_190_479_152_817,
+    scheduled_tick_time=-1,
+    interval=1,
+)
 def test_policy_skip_missed_and_drift(
-    tolerance: int, now: int, scheduled_tick_time: int, interval: int
+    tolerance: float, now: int, scheduled_tick_time: int, interval: int
 ) -> None:
     """Test the SkipMissedAndDrift policy."""
     hypothesis.assume(now >= scheduled_tick_time)
@@ -297,10 +331,10 @@ async def test_timer_construction_wrong_args() -> None:
         )
 
 
-async def test_timer_autostart(
-    event_loop: async_solipsism.EventLoop,  # pylint: disable=redefined-outer-name
-) -> None:
+async def test_timer_autostart() -> None:
     """Test the autostart of a periodic timer."""
+    event_loop = asyncio.get_running_loop()
+
     timer = Timer(timedelta(seconds=1.0), TriggerAllMissed())
 
     # We sleep some time, less than the interval, and then receive from the
@@ -312,10 +346,10 @@ async def test_timer_autostart(
     assert event_loop.time() == pytest.approx(1.0)
 
 
-async def test_timer_autostart_with_delay(
-    event_loop: async_solipsism.EventLoop,  # pylint: disable=redefined-outer-name
-) -> None:
+async def test_timer_autostart_with_delay() -> None:
     """Test the autostart of a periodic timer with a delay."""
+    event_loop = asyncio.get_running_loop()
+
     timer = Timer(
         timedelta(seconds=1.0), TriggerAllMissed(), start_delay=timedelta(seconds=0.5)
     )
@@ -344,9 +378,10 @@ class _StartMethod(enum.Enum):
 @pytest.mark.parametrize("start_method", list(_StartMethod))
 async def test_timer_no_autostart(
     start_method: _StartMethod,
-    event_loop: async_solipsism.EventLoop,  # pylint: disable=redefined-outer-name
 ) -> None:
     """Test a periodic timer when it is not automatically started."""
+    event_loop = asyncio.get_running_loop()
+
     timer = Timer(
         timedelta(seconds=1.0),
         TriggerAllMissed(),
@@ -377,10 +412,10 @@ async def test_timer_no_autostart(
     assert event_loop.time() == pytest.approx(1.5)
 
 
-async def test_timer_trigger_all_missed(
-    event_loop: async_solipsism.EventLoop,  # pylint: disable=redefined-outer-name
-) -> None:
+async def test_timer_trigger_all_missed() -> None:
     """Test a timer using the TriggerAllMissed policy."""
+    event_loop = asyncio.get_running_loop()
+
     interval = 1.0
     timer = Timer(timedelta(seconds=interval), TriggerAllMissed())
 
@@ -438,10 +473,10 @@ async def test_timer_trigger_all_missed(
     assert drift == pytest.approx(timedelta(seconds=0.0))
 
 
-async def test_timer_skip_missed_and_resync(
-    event_loop: async_solipsism.EventLoop,  # pylint: disable=redefined-outer-name
-) -> None:
+async def test_timer_skip_missed_and_resync() -> None:
     """Test a timer using the SkipMissedAndResync policy."""
+    event_loop = asyncio.get_running_loop()
+
     interval = 1.0
     timer = Timer(timedelta(seconds=interval), SkipMissedAndResync())
 
@@ -489,10 +524,10 @@ async def test_timer_skip_missed_and_resync(
     assert drift == pytest.approx(timedelta(seconds=0.0))
 
 
-async def test_timer_skip_missed_and_drift(
-    event_loop: async_solipsism.EventLoop,  # pylint: disable=redefined-outer-name
-) -> None:
+async def test_timer_skip_missed_and_drift() -> None:
     """Test a timer using the SkipMissedAndDrift policy."""
+    event_loop = asyncio.get_running_loop()
+
     interval = 1.0
     tolerance = 0.1
     timer = Timer(
@@ -553,10 +588,10 @@ async def test_timer_skip_missed_and_drift(
     assert drift == pytest.approx(timedelta(seconds=0.0))
 
 
-async def test_timer_reset_with_new_interval(
-    event_loop: async_solipsism.EventLoop,  # pylint: disable=redefined-outer-name
-) -> None:
+async def test_timer_reset_with_new_interval() -> None:
     """Test resetting the timer with a new interval."""
+    event_loop = asyncio.get_running_loop()
+
     initial_interval = timedelta(seconds=1.0)
     new_interval = timedelta(seconds=2.0)
     timer = Timer(initial_interval, TriggerAllMissed())
