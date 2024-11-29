@@ -15,6 +15,7 @@ labelMappings:
   "part:channels": "part:channels"
   "part:core": "part:core"
   "part:docs": "part:docs"
+  "part:experimental": "part:experimental"
   "part:synchronization": "part:synchronization"
   "part:tests": "part:tests"
   "part:tooling": "part:tooling"

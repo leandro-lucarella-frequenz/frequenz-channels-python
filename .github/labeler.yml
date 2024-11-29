@@ -49,6 +49,11 @@
       - "src/frequenz/channels/_receiver.py"
       - "src/frequenz/channels/_sender.py"
 
+"part:experimental":
+  - changed-files:
+    - any-glob-to-any-file:
+      - "src/frequenz/channels/experimental/*.py"
+
 "part:synchronization":
   - changed-files:
     - any-glob-to-any-file:
