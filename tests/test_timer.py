@@ -27,12 +27,19 @@ def event_loop_policy() -> async_solipsism.EventLoopPolicy:
     return async_solipsism.EventLoopPolicy()
 
 
-# We give some extra room (dividing by 10) to the max and min to avoid flaky errors
-# failing when getting too close to the limits, as these are not realistic scenarios and
-# weird things can happen.
-_max_timedelta_microseconds = int(timedelta.max.total_seconds() * 1_000_000 / 10)
+_max_timedelta_microseconds = (
+    int(
+        timedelta.max.total_seconds() * 1_000_000,
+    )
+    - 1
+)
 
-_min_timedelta_microseconds = int(timedelta.min.total_seconds() * 1_000_000 / 10)
+_min_timedelta_microseconds = (
+    int(
+        timedelta.min.total_seconds() * 1_000_000,
+    )
+    + 1
+)
 
 _calculate_next_tick_time_args = {
     "now": st.integers(),
