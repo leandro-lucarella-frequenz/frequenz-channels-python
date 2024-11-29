@@ -6,7 +6,6 @@
 
 import asyncio
 import enum
-from collections.abc import Iterator
 from datetime import timedelta
 
 import async_solipsism
@@ -22,13 +21,10 @@ from frequenz.channels.timer import (
 )
 
 
-# Setting 'autouse' has no effect as this method replaces the event loop for all tests in the file.
-@pytest.fixture()
-def event_loop() -> Iterator[async_solipsism.EventLoop]:
-    """Replace the loop with one that doesn't interact with the outside world."""
-    loop = async_solipsism.EventLoop()
-    yield loop
-    loop.close()
+@pytest.fixture(autouse=True)
+def event_loop_policy() -> async_solipsism.EventLoopPolicy:
+    """Return an event loop policy that uses the async solipsism event loop."""
+    return async_solipsism.EventLoopPolicy()
 
 
 # We give some extra room (dividing by 10) to the max and min to avoid flaky errors
@@ -297,10 +293,10 @@ async def test_timer_construction_wrong_args() -> None:
         )
 
 
-async def test_timer_autostart(
-    event_loop: async_solipsism.EventLoop,  # pylint: disable=redefined-outer-name
-) -> None:
+async def test_timer_autostart() -> None:
     """Test the autostart of a periodic timer."""
+    event_loop = asyncio.get_running_loop()
+
     timer = Timer(timedelta(seconds=1.0), TriggerAllMissed())
 
     # We sleep some time, less than the interval, and then receive from the
@@ -312,10 +308,10 @@ async def test_timer_autostart(
     assert event_loop.time() == pytest.approx(1.0)
 
 
-async def test_timer_autostart_with_delay(
-    event_loop: async_solipsism.EventLoop,  # pylint: disable=redefined-outer-name
-) -> None:
+async def test_timer_autostart_with_delay() -> None:
     """Test the autostart of a periodic timer with a delay."""
+    event_loop = asyncio.get_running_loop()
+
     timer = Timer(
         timedelta(seconds=1.0), TriggerAllMissed(), start_delay=timedelta(seconds=0.5)
     )
@@ -344,9 +340,10 @@ class _StartMethod(enum.Enum):
 @pytest.mark.parametrize("start_method", list(_StartMethod))
 async def test_timer_no_autostart(
     start_method: _StartMethod,
-    event_loop: async_solipsism.EventLoop,  # pylint: disable=redefined-outer-name
 ) -> None:
     """Test a periodic timer when it is not automatically started."""
+    event_loop = asyncio.get_running_loop()
+
     timer = Timer(
         timedelta(seconds=1.0),
         TriggerAllMissed(),
@@ -377,10 +374,10 @@ async def test_timer_no_autostart(
     assert event_loop.time() == pytest.approx(1.5)
 
 
-async def test_timer_trigger_all_missed(
-    event_loop: async_solipsism.EventLoop,  # pylint: disable=redefined-outer-name
-) -> None:
+async def test_timer_trigger_all_missed() -> None:
     """Test a timer using the TriggerAllMissed policy."""
+    event_loop = asyncio.get_running_loop()
+
     interval = 1.0
     timer = Timer(timedelta(seconds=interval), TriggerAllMissed())
 
@@ -438,10 +435,10 @@ async def test_timer_trigger_all_missed(
     assert drift == pytest.approx(timedelta(seconds=0.0))
 
 
-async def test_timer_skip_missed_and_resync(
-    event_loop: async_solipsism.EventLoop,  # pylint: disable=redefined-outer-name
-) -> None:
+async def test_timer_skip_missed_and_resync() -> None:
     """Test a timer using the SkipMissedAndResync policy."""
+    event_loop = asyncio.get_running_loop()
+
     interval = 1.0
     timer = Timer(timedelta(seconds=interval), SkipMissedAndResync())
 
@@ -489,10 +486,10 @@ async def test_timer_skip_missed_and_resync(
     assert drift == pytest.approx(timedelta(seconds=0.0))
 
 
-async def test_timer_skip_missed_and_drift(
-    event_loop: async_solipsism.EventLoop,  # pylint: disable=redefined-outer-name
-) -> None:
+async def test_timer_skip_missed_and_drift() -> None:
     """Test a timer using the SkipMissedAndDrift policy."""
+    event_loop = asyncio.get_running_loop()
+
     interval = 1.0
     tolerance = 0.1
     timer = Timer(
@@ -553,10 +550,10 @@ async def test_timer_skip_missed_and_drift(
     assert drift == pytest.approx(timedelta(seconds=0.0))
 
 
-async def test_timer_reset_with_new_interval(
-    event_loop: async_solipsism.EventLoop,  # pylint: disable=redefined-outer-name
-) -> None:
+async def test_timer_reset_with_new_interval() -> None:
     """Test resetting the timer with a new interval."""
+    event_loop = asyncio.get_running_loop()
+
     initial_interval = timedelta(seconds=1.0)
     new_interval = timedelta(seconds=2.0)
     timer = Timer(initial_interval, TriggerAllMissed())
