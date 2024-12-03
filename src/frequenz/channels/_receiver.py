@@ -58,7 +58,9 @@ use it in any of the ways described above.
 # Message Filtering
 
 If you need to filter the received messages, receivers provide a
-[`filter()`][frequenz.channels.Receiver.filter] method to easily do so:
+[`take_while()`][frequenz.channels.Receiver.take_while] and a
+[`drop_while()`][frequenz.channels.Receiver.drop_while]
+method to easily do so:
 
 ```python show_lines="6:"
 from frequenz.channels import Anycast
@@ -66,13 +68,13 @@ from frequenz.channels import Anycast
 channel = Anycast[int](name="test-channel")
 receiver = channel.new_receiver()
 
-async for message in receiver.filter(lambda x: x % 2 == 0):
+async for message in receiver.take_while(lambda x: x % 2 == 0):
     print(message)  # Only even numbers will be printed
 ```
 
 As with [`map()`][frequenz.channels.Receiver.map],
-[`filter()`][frequenz.channels.Receiver.filter] returns a new full receiver, so you can
-use it in any of the ways described above.
+[`take_while()`][frequenz.channels.Receiver.take_while] returns a new full receiver, so
+you can use it in any of the ways described above.
 
 # Error Handling
 
@@ -281,6 +283,11 @@ class Receiver(ABC, Generic[ReceiverMessageT_co]):
         """Apply a type guard on the messages on a receiver.
 
         Tip:
+            It is recommended to use the
+            [`take_while()`][frequenz.channels.Receiver.take_while] method instead of
+            this one, as it makes the intention more clear.
+
+        Tip:
             The returned receiver type won't have all the methods of the original
             receiver. If you need to access methods of the original receiver that are
             not part of the `Receiver` interface you should save a reference to the
@@ -300,6 +307,11 @@ class Receiver(ABC, Generic[ReceiverMessageT_co]):
         self, filter_function: Callable[[ReceiverMessageT_co], bool], /
     ) -> Receiver[ReceiverMessageT_co]:
         """Apply a filter function on the messages on a receiver.
+
+        Tip:
+            It is recommended to use the
+            [`take_while()`][frequenz.channels.Receiver.take_while] method instead of
+            this one, as it makes the intention more clear.
 
         Tip:
             The returned receiver type won't have all the methods of the original
@@ -326,6 +338,11 @@ class Receiver(ABC, Generic[ReceiverMessageT_co]):
     ) -> Receiver[ReceiverMessageT_co] | Receiver[FilteredMessageT_co]:
         """Apply a filter function on the messages on a receiver.
 
+        Tip:
+            It is recommended to use the
+            [`take_while()`][frequenz.channels.Receiver.take_while] method instead of
+            this one, as it makes the intention more clear.
+
         Note:
             You can pass a [type guard][typing.TypeGuard] as the filter function to
             narrow the type of the messages that pass the filter.
@@ -344,6 +361,117 @@ class Receiver(ABC, Generic[ReceiverMessageT_co]):
             A new receiver that only receives messages that pass the filter.
         """
         return _Filter(receiver=self, filter_function=filter_function)
+
+    @overload
+    def take_while(
+        self,
+        predicate: Callable[[ReceiverMessageT_co], TypeGuard[FilteredMessageT_co]],
+        /,
+    ) -> Receiver[FilteredMessageT_co]:
+        """Take only the messages that fulfill a predicate, narrowing the type.
+
+        The returned receiver will only receive messages that fulfill the predicate
+        (evaluates to `True`), and will drop messages that don't.
+
+        Tip:
+            The returned receiver type won't have all the methods of the original
+            receiver. If you need to access methods of the original receiver that are
+            not part of the `Receiver` interface you should save a reference to the
+            original receiver and use that instead.
+
+        Args:
+            predicate: The predicate to be applied on incoming messages to
+                determine if they should be taken.
+
+        Returns:
+            A new receiver that only receives messages that fulfill the predicate.
+        """
+        ...  # pylint: disable=unnecessary-ellipsis
+
+    @overload
+    def take_while(
+        self, predicate: Callable[[ReceiverMessageT_co], bool], /
+    ) -> Receiver[ReceiverMessageT_co]:
+        """Take only the messages that fulfill a predicate.
+
+        The returned receiver will only receive messages that fulfill the predicate
+        (evaluates to `True`), and will drop messages that don't.
+
+        Tip:
+            The returned receiver type won't have all the methods of the original
+            receiver. If you need to access methods of the original receiver that are
+            not part of the `Receiver` interface you should save a reference to the
+            original receiver and use that instead.
+
+        Args:
+            predicate: The predicate to be applied on incoming messages to
+                determine if they should be taken.
+
+        Returns:
+            A new receiver that only receives messages that fulfill the predicate.
+        """
+        ...  # pylint: disable=unnecessary-ellipsis
+
+    def take_while(
+        self,
+        predicate: (
+            Callable[[ReceiverMessageT_co], bool]
+            | Callable[[ReceiverMessageT_co], TypeGuard[FilteredMessageT_co]]
+        ),
+        /,
+    ) -> Receiver[ReceiverMessageT_co] | Receiver[FilteredMessageT_co]:
+        """Take only the messages that fulfill a predicate.
+
+        The returned receiver will only receive messages that fulfill the predicate
+        (evaluates to `True`), and will drop messages that don't.
+
+        Note:
+            You can pass a [type guard][typing.TypeGuard] as the predicate to narrow the
+            type of the received messages.
+
+        Tip:
+            The returned receiver type won't have all the methods of the original
+            receiver. If you need to access methods of the original receiver that are
+            not part of the `Receiver` interface you should save a reference to the
+            original receiver and use that instead.
+
+        Args:
+            predicate: The predicate to be applied on incoming messages to
+                determine if they should be taken.
+
+        Returns:
+            A new receiver that only receives messages that fulfill the predicate.
+        """
+        return _Filter(receiver=self, filter_function=predicate)
+
+    def drop_while(
+        self,
+        predicate: Callable[[ReceiverMessageT_co], bool],
+        /,
+    ) -> Receiver[ReceiverMessageT_co] | Receiver[ReceiverMessageT_co]:
+        """Drop the messages that fulfill a predicate.
+
+        The returned receiver will drop messages that fulfill the predicate
+        (evaluates to `True`), and receive messages that don't.
+
+        Tip:
+            If you need to narrow the type of the received messages, you can use the
+            [`take_while()`][frequenz.channels.Receiver.take_while] method instead.
+
+        Tip:
+            The returned receiver type won't have all the methods of the original
+            receiver. If you need to access methods of the original receiver that are
+            not part of the `Receiver` interface you should save a reference to the
+            original receiver and use that instead.
+
+        Args:
+            predicate: The predicate to be applied on incoming messages to
+                determine if they should be dropped.
+
+        Returns:
+            A new receiver that only receives messages that don't fulfill the predicate.
+        """
+        return _Filter(receiver=self, filter_function=predicate, negate=True)
 
     def triggered(
         self, selected: Selected[Any]
@@ -492,12 +620,14 @@ class _Filter(Receiver[ReceiverMessageT_co], Generic[ReceiverMessageT_co]):
         *,
         receiver: Receiver[ReceiverMessageT_co],
         filter_function: Callable[[ReceiverMessageT_co], bool],
+        negate: bool = False,
     ) -> None:
         """Initialize this receiver filter.
 
         Args:
             receiver: The input receiver.
             filter_function: The function to apply on the input data.
+            negate: Whether to negate the filter function.
         """
         self._receiver: Receiver[ReceiverMessageT_co] = receiver
         """The input receiver."""
@@ -506,6 +636,8 @@ class _Filter(Receiver[ReceiverMessageT_co], Generic[ReceiverMessageT_co]):
         """The function to apply on the input data."""
 
         self._next_message: ReceiverMessageT_co | _Sentinel = _SENTINEL
+
+        self._negate: bool = negate
 
         self._recv_closed = False
 
@@ -522,7 +654,10 @@ class _Filter(Receiver[ReceiverMessageT_co], Generic[ReceiverMessageT_co]):
         """
         while await self._receiver.ready():
             message = self._receiver.consume()
-            if self._filter_function(message):
+            result = self._filter_function(message)
+            if self._negate:
+                result = not result
+            if result:
                 self._next_message = message
                 return True
         self._recv_closed = True
