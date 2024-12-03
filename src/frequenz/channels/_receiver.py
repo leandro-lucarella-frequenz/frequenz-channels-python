@@ -76,6 +76,10 @@ As with [`map()`][frequenz.channels.Receiver.map],
 [`take_while()`][frequenz.channels.Receiver.take_while] returns a new full receiver, so
 you can use it in any of the ways described above.
 
+[`take_while()`][frequenz.channels.Receiver.take_while] can even receive a
+[type guard][typing.TypeGuard] as the predicate to narrow the type of the received
+messages.
+
 # Error Handling
 
 !!! Tip inline end
