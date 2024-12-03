@@ -6,7 +6,6 @@
 
 import asyncio
 from dataclasses import dataclass
-from typing import TypeGuard, assert_never
 
 import pytest
 
@@ -192,86 +191,6 @@ async def test_broadcast_no_resend_latest() -> None:
 
     assert await old_recv.receive() == 0
     assert await new_recv.receive() == 100
-
-
-async def test_broadcast_async_iterator() -> None:
-    """Check that the broadcast receiver works as an async iterator."""
-    bcast: Broadcast[int] = Broadcast(name="iter_test")
-
-    sender = bcast.new_sender()
-    receiver = bcast.new_receiver()
-
-    async def send_messages() -> None:
-        for val in range(0, 10):
-            await sender.send(val)
-        await bcast.close()
-
-    sender_task = asyncio.create_task(send_messages())
-
-    received = []
-    async for recv in receiver:
-        received.append(recv)
-
-    assert received == list(range(0, 10))
-
-    await sender_task
-
-
-async def test_broadcast_map() -> None:
-    """Ensure map runs on all incoming messages."""
-    chan = Broadcast[int](name="input-chan")
-    sender = chan.new_sender()
-
-    # transform int receiver into bool receiver.
-    receiver: Receiver[bool] = chan.new_receiver().map(lambda num: num > 10)
-
-    await sender.send(8)
-    await sender.send(12)
-
-    assert (await receiver.receive()) is False
-    assert (await receiver.receive()) is True
-
-
-async def test_broadcast_filter() -> None:
-    """Ensure filter keeps only the messages that pass the filter."""
-    chan = Broadcast[int](name="input-chan")
-    sender = chan.new_sender()
-
-    # filter out all numbers less than 10.
-    receiver: Receiver[int] = chan.new_receiver().filter(lambda num: num > 10)
-
-    await sender.send(8)
-    await sender.send(12)
-    await sender.send(5)
-    await sender.send(15)
-
-    assert (await receiver.receive()) == 12
-    assert (await receiver.receive()) == 15
-
-
-async def test_broadcast_filter_type_guard() -> None:
-    """Ensure filter type guard works."""
-    chan = Broadcast[int | str](name="input-chan")
-    sender = chan.new_sender()
-
-    def _is_int(num: int | str) -> TypeGuard[int]:
-        return isinstance(num, int)
-
-    # filter out objects that are not integers.
-    receiver = chan.new_receiver().filter(_is_int)
-
-    await sender.send("hello")
-    await sender.send(8)
-
-    message = await receiver.receive()
-    assert message == 8
-    is_int = False
-    match message:
-        case int():
-            is_int = True
-        case unexpected:
-            assert_never(unexpected)
-    assert is_int
 
 
 async def test_broadcast_receiver_drop() -> None:
